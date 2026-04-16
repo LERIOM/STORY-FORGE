@@ -1,0 +1,86 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: storyforge
+      POSTGRES_USER: storyforge
+      POSTGRES_PASSWORD: storyforge
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    environment:
+      APP_ENV: docker
+      DATABASE_URL: postgresql+psycopg://storyforge:storyforge@postgres:5432/storyforge
+      CELERY_BROKER_URL: redis://redis:6379/0
+      CELERY_RESULT_BACKEND: redis://redis:6379/1
+      CELERY_TASK_ALWAYS_EAGER: "false"
+      STORAGE_BACKEND: local
+      STORAGE_LOCAL_ROOT: /app/data/storage
+      SESSION_SECRET: change-me-in-production
+      FRONTEND_BASE_URL: ${FRONTEND_BASE_URL:-http://0.0.0.0:3000}
+      SPOTIFY_CLIENT_ID: ${SPOTIFY_CLIENT_ID:-}
+      SPOTIFY_CLIENT_SECRET: ${SPOTIFY_CLIENT_SECRET:-}
+      SPOTIFY_REDIRECT_URI: ${SPOTIFY_REDIRECT_URI:-http://0.0.0.0:8000/api/v1/auth/spotify/callback}
+    ports:
+      - "8000:8000"
+    volumes:
+      - backend_storage:/app/data/storage
+    depends_on:
+      - postgres
+      - redis
+
+  worker:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    command: celery -A app.tasks.celery_app.celery_app worker --loglevel=info
+    environment:
+      APP_ENV: docker
+      DATABASE_URL: postgresql+psycopg://storyforge:storyforge@postgres:5432/storyforge
+      CELERY_BROKER_URL: redis://redis:6379/0
+      CELERY_RESULT_BACKEND: redis://redis:6379/1
+      CELERY_TASK_ALWAYS_EAGER: "false"
+      STORAGE_BACKEND: local
+      STORAGE_LOCAL_ROOT: /app/data/storage
+      SESSION_SECRET: change-me-in-production
+      FRONTEND_BASE_URL: ${FRONTEND_BASE_URL:-http://0.0.0.0:3000}
+      SPOTIFY_CLIENT_ID: ${SPOTIFY_CLIENT_ID:-}
+      SPOTIFY_CLIENT_SECRET: ${SPOTIFY_CLIENT_SECRET:-}
+      SPOTIFY_REDIRECT_URI: ${SPOTIFY_REDIRECT_URI:-http://0.0.0.0:8000/api/v1/auth/spotify/callback}
+    volumes:
+      - backend_storage:/app/data/storage
+    depends_on:
+      - backend
+      - redis
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    command: npm run start -- --hostname 0.0.0.0
+    environment:
+      NODE_ENV: production
+      NEXT_PUBLIC_API_BASE_URL: ${NEXT_PUBLIC_API_BASE_URL:-http://0.0.0.0:8000/api/v1}
+      NEXT_PUBLIC_APP_NAME: Story Forge
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+
+volumes:
+  postgres_data:
+  redis_data:
+  backend_storage:
