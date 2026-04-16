@@ -146,8 +146,14 @@ class SpotifyAuthService:
 
         scheme = self._resolve_request_scheme(request) or parsed_url.scheme or "http"
         hostname = self._resolve_request_hostname(request) or parsed_url.hostname or "127.0.0.1"
-        port = parsed_url.port or 3000
-        return f"{scheme}://{hostname}:{port}"
+        port = self._resolve_public_port(
+            request=request,
+            scheme=scheme,
+            hostname=hostname,
+            local_fallback_port=parsed_url.port or 3000,
+            use_request_port_for_local_host=False,
+        )
+        return self._build_absolute_url(scheme, hostname, port, parsed_url.path)
 
     def _resolve_spotify_redirect_uri(self, request: Request) -> str:
         configured_url = settings.spotify_redirect_uri.rstrip("/")
@@ -157,8 +163,14 @@ class SpotifyAuthService:
 
         scheme = self._resolve_request_scheme(request) or parsed_url.scheme or "http"
         hostname = self._resolve_request_hostname(request) or parsed_url.hostname or "127.0.0.1"
-        port = parsed_url.port or request.url.port or 8000
-        return f"{scheme}://{hostname}:{port}{parsed_url.path}"
+        port = self._resolve_public_port(
+            request=request,
+            scheme=scheme,
+            hostname=hostname,
+            local_fallback_port=parsed_url.port or 8000,
+            use_request_port_for_local_host=True,
+        )
+        return self._build_absolute_url(scheme, hostname, port, parsed_url.path)
 
     def _resolve_request_scheme(self, request: Request) -> str:
         forwarded_proto = request.headers.get("x-forwarded-proto")
@@ -180,8 +192,60 @@ class SpotifyAuthService:
 
         return None
 
+    def _resolve_request_port(self, request: Request) -> int | None:
+        forwarded_host = request.headers.get("x-forwarded-host")
+        if forwarded_host:
+            port = self._extract_port(forwarded_host.split(",", maxsplit=1)[0].strip())
+            if port is not None:
+                return port
+
+        forwarded_port = request.headers.get("x-forwarded-port")
+        if forwarded_port:
+            candidate = forwarded_port.split(",", maxsplit=1)[0].strip()
+            if candidate.isdigit():
+                return int(candidate)
+
+        if request.url.port is not None:
+            return request.url.port
+
+        host = request.headers.get("host")
+        if host:
+            return self._extract_port(host.split(",", maxsplit=1)[0].strip())
+
+        return None
+
+    def _resolve_public_port(
+        self,
+        request: Request,
+        scheme: str,
+        hostname: str,
+        local_fallback_port: int,
+        use_request_port_for_local_host: bool,
+    ) -> int | None:
+        request_port = self._resolve_request_port(request)
+        if hostname in LOCAL_PLACEHOLDER_HOSTS:
+            if use_request_port_for_local_host and request_port is not None:
+                return request_port
+            return local_fallback_port
+
+        if request_port is None or request_port == self._default_port_for_scheme(scheme):
+            return None
+
+        return request_port
+
     def _should_resolve_from_request(self, hostname: str | None) -> bool:
         return hostname in LOCAL_PLACEHOLDER_HOSTS
+
+    def _default_port_for_scheme(self, scheme: str) -> int | None:
+        if scheme == "http":
+            return 80
+        if scheme == "https":
+            return 443
+        return None
+
+    def _build_absolute_url(self, scheme: str, hostname: str, port: int | None, path: str) -> str:
+        netloc = hostname if port is None else f"{hostname}:{port}"
+        return f"{scheme}://{netloc}{path}"
 
     def _strip_port(self, host: str) -> str:
         if host.startswith("[") and "]" in host:
@@ -191,3 +255,17 @@ class SpotifyAuthService:
             return host.split(":", maxsplit=1)[0]
 
         return host
+
+    def _extract_port(self, host: str) -> int | None:
+        if host.startswith("[") and "]" in host:
+            remainder = host[host.index("]") + 1 :]
+            if remainder.startswith(":") and remainder[1:].isdigit():
+                return int(remainder[1:])
+            return None
+
+        if host.count(":") == 1:
+            port = host.rsplit(":", maxsplit=1)[1]
+            if port.isdigit():
+                return int(port)
+
+        return None

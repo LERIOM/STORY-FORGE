@@ -19,8 +19,12 @@ function resolveApiBaseUrl() {
     return configuredBaseUrl;
   }
 
-  const apiPort = parsedBaseUrl.port || "8000";
   const apiPath = trimTrailingSlash(parsedBaseUrl.pathname);
+  if (!LOCAL_PLACEHOLDER_HOSTS.has(window.location.hostname)) {
+    return `${window.location.origin}${apiPath}`;
+  }
+
+  const apiPort = parsedBaseUrl.port || "8000";
   return `${window.location.protocol}//${window.location.hostname}:${apiPort}${apiPath}`;
 }
 

@@ -29,3 +29,13 @@ docker compose up --build
 - Spotify tracks are shown through metadata and embed/link on the site, not embedded inside the downloaded file.
 - The backend is intentionally organized by layers: routes, services, models, schemas, tasks and adapters.
 - The frontend is organized by responsibility: layout shell, landing, creation workflow, library, detail view and profile.
+
+## Reverse proxy deployment
+
+When the app is served behind Nginx or another reverse proxy, keep port `8000` internal and expose a single public origin such as `https://storyforge.sandbag.ch`.
+
+- `FRONTEND_BASE_URL=https://storyforge.sandbag.ch`
+- `NEXT_PUBLIC_API_BASE_URL=https://storyforge.sandbag.ch/api/v1`
+- `SPOTIFY_REDIRECT_URI=https://storyforge.sandbag.ch/api/v1/auth/spotify/callback`
+
+The reverse proxy should forward `/api/v1/` to the backend service on port `8000` and serve the frontend on the same public host. Do not publish OAuth URLs with `:8000` unless that port is intentionally exposed to users.
