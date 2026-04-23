@@ -3,6 +3,7 @@
 .env.*
 !.env.example
 !.env.docker.example
+!.env.production.example
 .venv/
 __pycache__/
 .pytest_cache/
@@ -24,4 +25,3 @@ backend/__pycache__/
 *.pyo
 *.sqlite3
 *.db
-

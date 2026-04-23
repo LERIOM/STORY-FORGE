@@ -10,6 +10,8 @@ Story Forge is a mobile-first web app that generates a single vertical story fro
 
 ## Local Docker workflow
 
+This compose file is intentionally local-only. It now binds published ports to `127.0.0.1` so databases and app ports are not exposed on all interfaces by default.
+
 1. Copy `.env.example` or `.env.docker.example` and set Spotify credentials.
 2. Run:
 
@@ -21,6 +23,14 @@ docker compose up --build
 
 - Frontend: `http://127.0.0.1:3000`
 - Backend docs: `http://127.0.0.1:8000/docs`
+
+## Production deployment
+
+Use the dedicated production stack instead of `docker-compose.yml`.
+
+- `docker-compose.prod.yml`: production Docker Compose stack
+- `.env.production.example`: production environment template
+- `deploy/PRODUCTION.md`: server setup, Nginx, Certbot and security checklist
 
 ## Notes
 
