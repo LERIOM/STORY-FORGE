@@ -49,3 +49,11 @@ When the app is served behind Nginx or another reverse proxy, keep port `8000` i
 - `SPOTIFY_REDIRECT_URI=https://storyforge.sandbag.ch/api/v1/auth/spotify/callback`
 
 The reverse proxy should forward `/api/v1/` to the backend service on port `8000` and serve the frontend on the same public host. Do not publish OAuth URLs with `:8000` unless that port is intentionally exposed to users.
+
+
+# pour le backend
+
+Il faut un projet suplémentaire 
+
+cd ..
+git clone https://github.com/GabinVr/StoryForgeAPI.git StoryForgeAPI

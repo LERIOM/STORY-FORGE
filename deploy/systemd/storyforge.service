@@ -6,7 +6,7 @@ Wants=network-online.target
 
 [Service]
 Type=oneshot
-WorkingDirectory=/opt/storyforge
+WorkingDirectory=/var/www/STORY-FORGE
 ExecStart=/usr/bin/docker compose --env-file .env.production -f docker-compose.prod.yml up -d --remove-orphans
 ExecStop=/usr/bin/docker compose --env-file .env.production -f docker-compose.prod.yml down
 ExecReload=/usr/bin/docker compose --env-file .env.production -f docker-compose.prod.yml up -d --remove-orphans
