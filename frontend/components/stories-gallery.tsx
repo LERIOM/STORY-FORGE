@@ -96,11 +96,13 @@ export function StoriesGallery({ locale }: StoriesGalleryProps) {
         {stories.map((story) => (
           <article key={story.id} className="surface-card story-card">
             <div className="story-card-preview">
-              <img
-                className="story-card-image"
-                src={toAbsoluteApiUrl(story.image_url)}
-                alt={story.context_text}
-              />
+              {story.image_url && (
+                <img
+                  className="story-card-image"
+                  src={toAbsoluteApiUrl(story.image_url)}
+                  alt={story.context_text}
+                />
+              )}
             </div>
             <div className="story-card-copy">
               <strong>{formatStoryDate(story.created_at, locale)}</strong>
@@ -129,7 +131,8 @@ export function StoriesGallery({ locale }: StoriesGalleryProps) {
               <button
                 type="button"
                 className="secondary-button"
-                onClick={() => window.open(toAbsoluteApiUrl(story.download_url), "_blank", "noopener")}
+                disabled={!story.download_url}
+                onClick={() => story.download_url && window.open(toAbsoluteApiUrl(story.download_url), "_blank", "noopener")}
               >
                 {isFrench ? "Télécharger" : "Download"}
               </button>

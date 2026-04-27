@@ -199,28 +199,66 @@ export function StoryDetailView({
         }}
       >
         <div className="story-frame">
-          <img
-            src={toAbsoluteApiUrl(story.image_url)}
-            alt={story.context_text}
-            style={{ width: "100%", height: "100%", objectFit: "cover" }}
-          />
+          {story.image_url && (
+            <img
+              src={toAbsoluteApiUrl(story.image_url)}
+              alt={story.context_text}
+              style={{ width: "100%", height: "100%", objectFit: "cover" }}
+            />
+          )}
         </div>
 
         <div className="stack">
-          {story.track && (
-            <div className="surface-card" style={{ padding: 20, display: "grid", gap: 18 }}>
-              {trackEmbed && (
-                <iframe
-                  src={trackEmbed}
-                  width="100%"
-                  height="152"
-                  loading="lazy"
-                  allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
-                  style={{ border: 0, borderRadius: 18 }}
-                />
-              )}
-            </div>
-          )}
+          <div className="surface-card" style={{ padding: 20, display: "grid", gap: 14 }}>
+            <strong style={{ fontSize: "0.85rem", letterSpacing: "0.06em", textTransform: "uppercase", color: "var(--text-soft)" }}>
+              {isFrench ? "Chanson recommandée" : "Recommended song"}
+            </strong>
+            {story.track ? (
+              <>
+                {(story.track.name || story.track.artist) && (
+                  <div style={{ display: "grid", gap: 4 }}>
+                    {story.track.name && (
+                      <strong style={{ fontSize: "1.05rem" }}>
+                        {story.track.external_url ? (
+                          <a
+                            href={story.track.external_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            style={{ color: "inherit", textDecoration: "none" }}
+                          >
+                            {story.track.name}
+                          </a>
+                        ) : (
+                          story.track.name
+                        )}
+                      </strong>
+                    )}
+                    {story.track.artist && (
+                      <span className="muted" style={{ fontSize: "0.95rem" }}>
+                        {story.track.artist}
+                      </span>
+                    )}
+                  </div>
+                )}
+                {trackEmbed && (
+                  <iframe
+                    src={trackEmbed}
+                    width="100%"
+                    height="352"
+                    loading="lazy"
+                    allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
+                    style={{ border: 0, borderRadius: 18 }}
+                  />
+                )}
+              </>
+            ) : (
+              <p className="muted" style={{ margin: 0 }}>
+                {isFrench
+                  ? "Aucune chanson recommandée pour cette story."
+                  : "No song recommendation available for this story."}
+              </p>
+            )}
+          </div>
 
           <div className="surface-card" style={{ padding: 20, display: "grid", gap: 12 }}>
             <div style={{ display: "flex", justifyContent: "space-between", gap: 16, flexWrap: "wrap" }}>
@@ -236,7 +274,8 @@ export function StoryDetailView({
               <button
                 type="button"
                 className="primary-button"
-                onClick={() => window.open(toAbsoluteApiUrl(story.download_url), "_blank", "noopener")}
+                disabled={!story.download_url}
+                onClick={() => story.download_url && window.open(toAbsoluteApiUrl(story.download_url), "_blank", "noopener")}
               >
                 {isFrench ? "Télécharger la story" : "Download story"}
               </button>

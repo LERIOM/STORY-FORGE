@@ -107,6 +107,9 @@ export function CreateStoryWizard({ locale }: CreateStoryWizardProps) {
     if (!job || !["queued", "running"].includes(job.status)) return;
 
     let cancelled = false;
+    // 15 minutes — accounts for cold-start model loading on first run
+    const MAX_WAIT_MS = 15 * 60 * 1000;
+    const startedAt = Date.now();
 
     const pollJob = async (jobId: string) => {
       try {
@@ -116,8 +119,6 @@ export function CreateStoryWizard({ locale }: CreateStoryWizardProps) {
         setJob(payload);
         if (payload.status === "succeeded" && payload.story_id) {
           const generatedStory = await fetchStory(payload.story_id);
-          if (cancelled) return;
-
           setStory(generatedStory);
           startTransition(() => {
             router.replace(`${pathname}?story=${payload.story_id}`, { scroll: false });
@@ -135,6 +136,17 @@ export function CreateStoryWizard({ locale }: CreateStoryWizardProps) {
     };
 
     const timer = window.setInterval(() => {
+      if (Date.now() - startedAt > MAX_WAIT_MS) {
+        cancelled = true;
+        window.clearInterval(timer);
+        setError(
+          isFrench
+            ? "La génération prend trop longtemps. Les modèles IA chargent au premier démarrage — réessayez dans quelques instants."
+            : "Generation is taking too long. AI models are loading on first start — please try again in a moment."
+        );
+        setSubmitting(false);
+        return;
+      }
       void pollJob(job.id);
     }, 2200);
 
@@ -547,11 +559,13 @@ export function CreateStoryWizard({ locale }: CreateStoryWizardProps) {
                 }}
               >
                 <div className="story-frame">
-                  <img
-                    src={toAbsoluteApiUrl(story.image_url)}
-                    alt={story.context_text}
-                    style={{ width: "100%", height: "100%", objectFit: "cover" }}
-                  />
+                  {story.image_url && (
+                    <img
+                      src={toAbsoluteApiUrl(story.image_url)}
+                      alt={story.context_text}
+                      style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                    />
+                  )}
                 </div>
 
                 <div className="stack">
@@ -561,7 +575,8 @@ export function CreateStoryWizard({ locale }: CreateStoryWizardProps) {
                       <button
                         type="button"
                         className="primary-button"
-                        onClick={() => window.open(toAbsoluteApiUrl(story.download_url), "_blank", "noopener")}
+                        disabled={!story.download_url}
+                        onClick={() => story.download_url && window.open(toAbsoluteApiUrl(story.download_url), "_blank", "noopener")}
                       >
                         {copy.create.download}
                       </button>
@@ -578,20 +593,56 @@ export function CreateStoryWizard({ locale }: CreateStoryWizardProps) {
                     {error && <p style={{ margin: 0, color: "var(--danger)" }}>{error}</p>}
                   </div>
 
-                  {story.track && (
-                    <div style={{ display: "grid", gap: 16 }}>
-                      {story.track.embed_url && (
-                        <iframe
-                          src={story.track.embed_url}
-                          width="100%"
-                          height="152"
-                          loading="lazy"
-                          allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
-                          style={{ border: 0, borderRadius: 18 }}
-                        />
-                      )}
-                    </div>
-                  )}
+                  <div className="surface-card" style={{ padding: 16, display: "grid", gap: 12 }}>
+                    <strong style={{ fontSize: "0.85rem", letterSpacing: "0.06em", textTransform: "uppercase", color: "var(--text-soft)" }}>
+                      {isFrench ? "Chanson recommandée" : "Recommended song"}
+                    </strong>
+                    {story.track ? (
+                      <>
+                        {(story.track.name || story.track.artist) && (
+                          <div style={{ display: "grid", gap: 4 }}>
+                            {story.track.name && (
+                              <strong style={{ fontSize: "1.05rem" }}>
+                                {story.track.external_url ? (
+                                  <a
+                                    href={story.track.external_url}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    style={{ color: "inherit", textDecoration: "none" }}
+                                  >
+                                    {story.track.name}
+                                  </a>
+                                ) : (
+                                  story.track.name
+                                )}
+                              </strong>
+                            )}
+                            {story.track.artist && (
+                              <span className="muted" style={{ fontSize: "0.95rem" }}>
+                                {story.track.artist}
+                              </span>
+                            )}
+                          </div>
+                        )}
+                        {story.track.embed_url && (
+                          <iframe
+                            src={story.track.embed_url}
+                            width="100%"
+                            height="352"
+                            loading="lazy"
+                            allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
+                            style={{ border: 0, borderRadius: 18 }}
+                          />
+                        )}
+                      </>
+                    ) : (
+                      <p className="muted" style={{ margin: 0 }}>
+                        {isFrench
+                          ? "Aucune chanson recommandée pour cette story."
+                          : "No song recommendation available for this story."}
+                      </p>
+                    )}
+                  </div>
                 </div>
               </div>
             </>

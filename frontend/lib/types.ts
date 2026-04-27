@@ -31,8 +31,8 @@ export type StorySummary = {
   language: string;
   context_text: string;
   created_at: string;
-  image_url: string;
-  download_url: string;
+  image_url: string | null;
+  download_url: string | null;
   source_story_id: string | null;
   track: SpotifyTrack | null;
 };
