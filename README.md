@@ -1,6 +1,37 @@
+<p align="center">
+  <img src="frontend/public/storyforge-logo.png" alt="Story Forge" width="120"/>
+</p>
+
 # Story Forge
 
-Story Forge is a mobile-first web app that generates a single vertical story from user images and written context, then suggests a Spotify track alongside the visual result.
+> A mobile-first web app that turns your photos and a few words into a vertical story, paired with a Spotify track that fits the mood.
+
+![Next.js](https://img.shields.io/badge/Next.js-000000?logo=nextdotjs&logoColor=white)
+![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?logo=typescript&logoColor=white)
+![FastAPI](https://img.shields.io/badge/FastAPI-009688?logo=fastapi&logoColor=white)
+![Celery](https://img.shields.io/badge/Celery-37814A?logo=celery&logoColor=white)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-4169E1?logo=postgresql&logoColor=white)
+![Redis](https://img.shields.io/badge/Redis-DC382D?logo=redis&logoColor=white)
+![Spotify](https://img.shields.io/badge/Spotify%20API-1DB954?logo=spotify&logoColor=white)
+
+Team project (with Gabin Vrillault and classmates).
+
+## Features
+
+- **Sign in with Spotify** and use your listening habits.
+- **Create a story** from one or more images and a short written context.
+- **AI generation** of the story visual, plus a Spotify track picked to match it, run as background jobs.
+- **Library** of past stories, with regeneration of the image or the music.
+- **PNG export**, English / French interface, built for phones first.
+
+## How it works
+
+```
+Next.js (app router) ──► /api/v1 ──► FastAPI ──► Celery workers ──► story image + track
+                                       │            │
+                                  PostgreSQL      Redis
+                                  (users, stories, jobs)
+```
 
 ## Monorepo structure
 
